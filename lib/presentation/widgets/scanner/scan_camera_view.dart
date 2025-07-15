@@ -26,9 +26,13 @@ class _ScanCameraViewState extends State<ScanCameraView>
   final CameraService _cameraService = CameraService.instance;
 
   late AnimationController _scanAnimationController;
+<<<<<<< HEAD
   late AnimationController _frameAnimationController;
   late Animation<double> _scanAnimation;
   late Animation<double> _frameAnimation;
+=======
+  late Animation<double> _scanAnimation;
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
 
   bool _isInitialized = false;
   bool _isScanning = false;
@@ -55,6 +59,7 @@ class _ScanCameraViewState extends State<ScanCameraView>
       ),
     );
 
+<<<<<<< HEAD
     // Animación de marco pulsante
     _frameAnimationController = AnimationController(
       duration: const Duration(seconds: 1),
@@ -71,6 +76,10 @@ class _ScanCameraViewState extends State<ScanCameraView>
     // Repetir animaciones
     _scanAnimationController.repeat(reverse: true);
     _frameAnimationController.repeat(reverse: true);
+=======
+    // Repetir animación de escaneo
+    _scanAnimationController.repeat(reverse: true);
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
   }
 
   Future<void> _initializeCamera() async {
@@ -85,7 +94,10 @@ class _ScanCameraViewState extends State<ScanCameraView>
   @override
   void dispose() {
     _scanAnimationController.dispose();
+<<<<<<< HEAD
     _frameAnimationController.dispose();
+=======
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
     super.dispose();
   }
 
@@ -118,6 +130,7 @@ class _ScanCameraViewState extends State<ScanCameraView>
         decoration: BoxDecoration(color: Colors.black.withOpacity(0.3)),
         child: Stack(
           children: [
+<<<<<<< HEAD
             // Marco de captura
             Center(
               child: AnimatedBuilder(
@@ -163,6 +176,45 @@ class _ScanCameraViewState extends State<ScanCameraView>
                     ),
                   );
                 },
+=======
+            // Marco de captura fijo (sin animación)
+            Center(
+              child: Container(
+                width: 280,
+                height: 390, // Proporción típica de carta MTG (63mm x 88mm)
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _isScanning
+                        ? AppColors.success
+                        : AppColors.primary,
+                    width: 3,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          (_isScanning
+                                  ? AppColors.success
+                                  : AppColors.primary)
+                              .withOpacity(0.3),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Esquinas del marco
+                    ..._buildFrameCorners(),
+
+                    // Línea de escaneo
+                    if (_isScanning) _buildScanLine(),
+
+                    // Texto de instrucciones
+                    _buildInstructionText(),
+                  ],
+                ),
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
               ),
             ),
           ],

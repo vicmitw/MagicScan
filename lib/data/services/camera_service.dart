@@ -88,10 +88,28 @@ class CameraService {
       // Capturar imagen
       final XFile image = await _controller!.takePicture();
 
+<<<<<<< HEAD
       // Procesar imagen para reconocimiento
       final result = await _processImage(image.path, scanType);
 
       return result;
+=======
+      // MOCK: Devolver datos mockeados de la carta "Obeka, Brute Chronologist"
+      await Future.delayed(const Duration(milliseconds: 800)); // Simular procesamiento
+      
+      final mockCard = ScannedCard(
+        name: 'Obeka, Brute Chronologist',
+        type: 'Legendary Creature — Ogre Wizard',
+        set: 'Commander Legends',
+        rarity: 'Mythic Rare',
+        imageUrl: 'assets/images/prueba_carta.png',
+        price: 8.99,
+        priceFormatted: '\$8.99',
+        confidence: 0.95,
+      );
+
+      return ScanResult.success(card: mockCard, scanType: scanType);
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
     } catch (e) {
       debugPrint('Error al capturar imagen: $e');
       return ScanResult.error(

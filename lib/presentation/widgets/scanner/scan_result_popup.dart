@@ -17,7 +17,11 @@ class ScanResultPopup extends StatefulWidget {
     required this.card,
     required this.scanType,
     required this.onComplete,
+<<<<<<< HEAD
     this.duration = const Duration(seconds: 4),
+=======
+    this.duration = const Duration(seconds: 6), // Aumentado de 4 a 6 segundos
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
   });
 
   @override
@@ -53,7 +57,11 @@ class _ScanResultPopupState extends State<ScanResultPopup>
           CurvedAnimation(parent: _slideController, curve: Curves.bounceOut),
         );
 
+<<<<<<< HEAD
     // Animación de progreso
+=======
+    // Animación de progreso - cambiado para ir de 1.0 a 0.0 (de lleno a vacío)
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
     _progressController = AnimationController(
       duration: widget.duration,
       vsync: this,
@@ -384,7 +392,11 @@ class _ScanResultPopupState extends State<ScanResultPopup>
 
           const SizedBox(height: 12),
 
+<<<<<<< HEAD
           // Barra de progreso
+=======
+          // Barra de progreso - ahora comienza llena y se vacía
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
           AnimatedBuilder(
             animation: _progressAnimation,
             builder: (context, child) {
@@ -397,12 +409,20 @@ class _ScanResultPopupState extends State<ScanResultPopup>
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
+<<<<<<< HEAD
                     value: 1.0 - _progressAnimation.value,
+=======
+                    value: _progressAnimation.value, // Ahora usa directamente el valor de la animación
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
                     backgroundColor: Colors.transparent,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       _progressAnimation.value > 0.3
                           ? AppColors.primary
+<<<<<<< HEAD
                           : AppColors.warning,
+=======
+                          : AppColors.warning, // Cambia a amarillo cuando queda poco tiempo
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
                     ),
                   ),
                 ),
@@ -456,7 +476,11 @@ void showScanResultPopup({
   required ScannedCard card,
   required ScanType scanType,
   required VoidCallback onComplete,
+<<<<<<< HEAD
   Duration duration = const Duration(seconds: 4),
+=======
+  Duration duration = const Duration(seconds: 6), // Aumentado de 4 a 6 segundos
+>>>>>>> 39059f1 (refactor: implement SOLID principles and clean architecture)
 }) {
   showDialog(
     context: context,
