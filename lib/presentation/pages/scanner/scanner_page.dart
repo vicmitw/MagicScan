@@ -15,7 +15,7 @@ class ScannerPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.camera_alt, size: 80, color: AppColors.primary),
+              const Icon(Icons.camera_alt, size: 80, color: AppColors.primary),
               const SizedBox(height: 24),
               Text(
                 'Motor de Scanning',

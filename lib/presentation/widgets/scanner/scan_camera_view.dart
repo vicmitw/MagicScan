@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../../theme/app_colors.dart';
-import '../../../data/models/scan_result.dart';
+import '../../../domain/entities/scan_result.dart';
+import '../../../domain/entities/scanned_card.dart';
 import '../../../data/services/camera_service.dart';
 
 /// Widget que muestra la vista de cámara con marco de captura
@@ -66,6 +67,27 @@ class _ScanCameraViewState extends State<ScanCameraView>
     }
   }
 
+  /// Maneja el tap to focus en la cámara
+  void _handleTapToFocus(TapDownDetails details) async {
+    if (!_isInitialized || _cameraService.controller == null) return;
+    
+    final controller = _cameraService.controller!;
+    final renderBox = context.findRenderObject() as RenderBox;
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+    
+    // Convertir coordenadas de pantalla a coordenadas de cámara (0.0 - 1.0)
+    final normalizedX = localPosition.dx / renderBox.size.width;
+    final normalizedY = localPosition.dy / renderBox.size.height;
+    
+    try {
+      await controller.setFocusPoint(Offset(normalizedX, normalizedY));
+      await controller.setExposurePoint(Offset(normalizedX, normalizedY));
+      debugPrint('👆 Focus ajustado a: ($normalizedX, $normalizedY)');
+    } catch (e) {
+      debugPrint('❌ Error al ajustar focus: $e');
+    }
+  }
+
   @override
   void dispose() {
     _scanAnimationController.dispose();
@@ -97,15 +119,19 @@ class _ScanCameraViewState extends State<ScanCameraView>
 
   Widget _buildCameraOverlay() {
     return Positioned.fill(
-      child: Container(
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.3)),
-        child: Stack(
-          children: [
+      child: GestureDetector(
+        onTapDown: (TapDownDetails details) {
+          _handleTapToFocus(details);
+        },
+        child: Container(
+          decoration: BoxDecoration(color: Colors.black.withOpacity(0.3)),
+          child: Stack(
+            children: [
             // Marco de captura fijo (sin animación)
             Center(
               child: Container(
-                width: 280,
-                height: 390, // Proporción típica de carta MTG (63mm x 88mm)
+                width: 240,
+                height: 336, // Proporción más precisa de carta MTG (ratio 5:7)
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: _isScanning
@@ -142,128 +168,66 @@ class _ScanCameraViewState extends State<ScanCameraView>
             ),
           ],
         ),
+        ),
       ),
     );
   }
 
   List<Widget> _buildFrameCorners() {
-    const cornerLength = 30.0;
-    const cornerWidth = 4.0;
-    final color = _isScanning ? AppColors.success : AppColors.primary;
+    const cornerSize = 24.0;
+    const cornerThickness = 4.0;
+    final cornerColor = _isScanning ? AppColors.success : AppColors.primary;
 
     return [
       // Esquina superior izquierda
       Positioned(
         top: 0,
         left: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)),
+        child: CustomPaint(
+          size: const Size(cornerSize, cornerSize),
+          painter: CornerPainter(
+            color: cornerColor,
+            thickness: cornerThickness,
+            isTopLeft: true,
           ),
         ),
       ),
-      Positioned(
-        top: 0,
-        left: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(topLeft: Radius.circular(16)),
-          ),
-        ),
-      ),
-
       // Esquina superior derecha
       Positioned(
         top: 0,
         right: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(16),
-            ),
+        child: CustomPaint(
+          size: const Size(cornerSize, cornerSize),
+          painter: CornerPainter(
+            color: cornerColor,
+            thickness: cornerThickness,
+            isTopRight: true,
           ),
         ),
       ),
-      Positioned(
-        top: 0,
-        right: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(16),
-            ),
-          ),
-        ),
-      ),
-
       // Esquina inferior izquierda
       Positioned(
         bottom: 0,
         left: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-            ),
+        child: CustomPaint(
+          size: const Size(cornerSize, cornerSize),
+          painter: CornerPainter(
+            color: cornerColor,
+            thickness: cornerThickness,
+            isBottomLeft: true,
           ),
         ),
       ),
-      Positioned(
-        bottom: 0,
-        left: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(16),
-            ),
-          ),
-        ),
-      ),
-
       // Esquina inferior derecha
       Positioned(
         bottom: 0,
         right: 0,
-        child: Container(
-          width: cornerLength,
-          height: cornerWidth,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              bottomRight: Radius.circular(16),
-            ),
-          ),
-        ),
-      ),
-      Positioned(
-        bottom: 0,
-        right: 0,
-        child: Container(
-          width: cornerWidth,
-          height: cornerLength,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.only(
-              bottomRight: Radius.circular(16),
-            ),
+        child: CustomPaint(
+          size: const Size(cornerSize, cornerSize),
+          painter: CornerPainter(
+            color: cornerColor,
+            thickness: cornerThickness,
+            isBottomRight: true,
           ),
         ),
       ),
@@ -275,26 +239,25 @@ class _ScanCameraViewState extends State<ScanCameraView>
       animation: _scanAnimation,
       builder: (context, child) {
         return Positioned(
-          top: 390 * _scanAnimation.value - 2,
+          top: _scanAnimation.value * (390 - 3), // Altura del marco - grosor línea
           left: 0,
           right: 0,
           child: Container(
-            height: 4,
+            height: 3,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
+                  AppColors.success.withOpacity(0.8),
                   AppColors.success,
-                  AppColors.success,
+                  AppColors.success.withOpacity(0.8),
                   Colors.transparent,
                 ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
               ),
-              borderRadius: BorderRadius.circular(2),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.success.withOpacity(0.6),
-                  blurRadius: 10,
+                  blurRadius: 8,
                   spreadRadius: 2,
                 ),
               ],
@@ -306,49 +269,112 @@ class _ScanCameraViewState extends State<ScanCameraView>
   }
 
   Widget _buildInstructionText() {
+    String instruction = _isScanning
+        ? 'Analizando carta...'
+        : 'Coloca la carta dentro del marco';
+
     return Positioned(
       bottom: -60,
       left: 0,
       right: 0,
-      child: Column(
-        children: [
-          Text(
-            widget.scanType == ScanType.quickScan
-                ? 'Coloca la carta en el marco'
-                : 'Escanea todas las cartas del mazo',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              shadows: [
-                Shadow(
-                  color: Colors.black,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          instruction,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(height: 8),
-          Text(
-            _isScanning ? 'Procesando...' : 'Toca el botón para escanear',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 14,
-              shadows: const [
-                Shadow(
-                  color: Colors.black,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  Widget _buildBottomControls() {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        color: Colors.black.withOpacity(0.5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // Botón de Galería (placeholder)
+            IconButton(
+              icon: const Icon(Icons.photo_library_outlined),
+              color: Colors.white,
+              iconSize: 32,
+              onPressed: () {
+                // TODO: Implementar selección desde galería
+              },
+            ),
+
+            // Botón de Captura principal
+            GestureDetector(
+              onTap: _handleScanButtonPressed,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.primary, width: 4),
+                ),
+              ),
+            ),
+
+            // Botón de Multi-Scan (placeholder)
+            IconButton(
+              icon: const Icon(Icons.filter_none_outlined),
+              color: Colors.white,
+              iconSize: 32,
+              onPressed: () {
+                // TODO: Implementar modo multi-scan
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleScanButtonPressed() async {
+    // Usar el sistema real de captura y procesamiento
+    if (!_isInitialized || _isScanning) return;
+
+    setState(() {
+      _isScanning = true;
+    });
+
+    try {
+      // Llamar al motor real de scanning
+      final result = await _cameraService.captureAndProcess(widget.scanType);
+      
+      // El resultado se mostrará en consola por el CameraService
+      // También pasamos el resultado al callback para mantener la UI
+      widget.onScanResult(result);
+    } catch (e) {
+      debugPrint('❌ Error en scanning: $e');
+      final errorResult = ScanResult.error(
+        error: 'Error en scanning: $e',
+        scanType: widget.scanType,
+      );
+      widget.onScanResult(errorResult);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
   }
 
   Widget _buildTopControls() {
@@ -391,52 +417,6 @@ class _ScanCameraViewState extends State<ScanCameraView>
     );
   }
 
-  Widget _buildBottomControls() {
-    return Positioned(
-      bottom: MediaQuery.of(context).padding.bottom + 32,
-      left: 16,
-      right: 16,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Botón cambiar cámara
-          _buildControlButton(
-            icon: Icons.flip_camera_android,
-            onPressed: _switchCamera,
-          ),
-
-          // Botón de captura
-          GestureDetector(
-            onTap: _isScanning ? null : _capture,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: _isScanning ? Colors.grey : AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Icon(
-                _isScanning ? Icons.hourglass_empty : Icons.camera_alt,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-          ),
-
-          // Spacer para balancear
-          const SizedBox(width: 56),
-        ],
-      ),
-    );
-  }
-
   Widget _buildControlButton({
     required IconData icon,
     required VoidCallback? onPressed,
@@ -474,16 +454,113 @@ class _ScanCameraViewState extends State<ScanCameraView>
     }
   }
 
-  void _toggleFlash() {
-    setState(() {
-      _flashMode = _flashMode == FlashMode.off
-          ? FlashMode.torch
-          : FlashMode.off;
-    });
-    _cameraService.setFlashMode(_flashMode);
+  Future<void> _toggleFlash() async {
+    // Alternar estado del flash
+    final newFlashMode = _flashMode == FlashMode.off 
+        ? FlashMode.torch 
+        : FlashMode.off;
+
+    try {
+      await _cameraService.controller?.setFlashMode(newFlashMode);
+      if (mounted) {
+        setState(() {
+          _flashMode = newFlashMode;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cambiar flash: $e');
+    }
+  }
+}
+
+// Painter personalizado para las esquinas del marco
+class CornerPainter extends CustomPainter {
+  final Color color;
+  final double thickness;
+  final bool isTopLeft;
+  final bool isTopRight;
+  final bool isBottomLeft;
+  final bool isBottomRight;
+
+  CornerPainter({
+    required this.color,
+    required this.thickness,
+    this.isTopLeft = false,
+    this.isTopRight = false,
+    this.isBottomLeft = false,
+    this.isBottomRight = false,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.round;
+
+    const cornerLength = 16.0;
+
+    if (isTopLeft) {
+      // Línea horizontal superior
+      canvas.drawLine(
+        const Offset(0, 0),
+        const Offset(cornerLength, 0),
+        paint,
+      );
+      // Línea vertical izquierda
+      canvas.drawLine(
+        const Offset(0, 0),
+        const Offset(0, cornerLength),
+        paint,
+      );
+    }
+
+    if (isTopRight) {
+      // Línea horizontal superior
+      canvas.drawLine(
+        Offset(size.width, 0),
+        Offset(size.width - cornerLength, 0),
+        paint,
+      );
+      // Línea vertical derecha
+      canvas.drawLine(
+        Offset(size.width, 0),
+        Offset(size.width, cornerLength),
+        paint,
+      );
+    }
+
+    if (isBottomLeft) {
+      // Línea horizontal inferior
+      canvas.drawLine(
+        Offset(0, size.height),
+        Offset(cornerLength, size.height),
+        paint,
+      );
+      // Línea vertical izquierda
+      canvas.drawLine(
+        Offset(0, size.height),
+        Offset(0, size.height - cornerLength),
+        paint,
+      );
+    }
+
+    if (isBottomRight) {
+      // Línea horizontal inferior
+      canvas.drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width - cornerLength, size.height),
+        paint,
+      );
+      // Línea vertical derecha
+      canvas.drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width, size.height - cornerLength),
+        paint,
+      );
+    }
   }
 
-  void _switchCamera() {
-    _cameraService.switchCamera();
-  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

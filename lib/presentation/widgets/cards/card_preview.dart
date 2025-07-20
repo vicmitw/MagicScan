@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-
-enum CardRarity { common, uncommon, rare, mythic }
+import './card_rarity_tag.dart';
 
 class CardPreview extends StatelessWidget {
   final String name;
@@ -178,30 +177,7 @@ class CardPreview extends StatelessWidget {
   }
 
   Widget _buildRarityBadge() {
-    final rarityColor = _getRarityColor();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: rarityColor,
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        _getRarityText(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    return CardRarityTag(rarity: rarity);
   }
 
   Widget _buildCardInfo() {
@@ -247,32 +223,6 @@ class CardPreview extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Color _getRarityColor() {
-    switch (rarity) {
-      case CardRarity.common:
-        return AppColors.common;
-      case CardRarity.uncommon:
-        return AppColors.uncommon;
-      case CardRarity.rare:
-        return AppColors.rare;
-      case CardRarity.mythic:
-        return AppColors.mythic;
-    }
-  }
-
-  String _getRarityText() {
-    switch (rarity) {
-      case CardRarity.common:
-        return 'C';
-      case CardRarity.uncommon:
-        return 'U';
-      case CardRarity.rare:
-        return 'R';
-      case CardRarity.mythic:
-        return 'M';
-    }
   }
 
   IconData _getCardIcon() {

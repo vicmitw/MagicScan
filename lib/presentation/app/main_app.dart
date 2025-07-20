@@ -17,7 +17,7 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   NavigationTab _currentTab = NavigationTab.freeScan;
 
-  // Componente atómico: Páginas mapeadas
+  // El mapa de páginas debe estar aquí, en el estado.
   final Map<NavigationTab, Widget> _pages = {
     NavigationTab.freeScan: const HomePage(),
     NavigationTab.packs: const PacksPage(),

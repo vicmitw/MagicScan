@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../theme/app_colors.dart';
-import '../../../data/models/scanned_card.dart';
-import '../../../data/models/scan_result.dart';
+import '../../../domain/entities/scanned_card.dart';
+import '../../../domain/entities/scan_result.dart';
 import '../cards/card_preview.dart';
 
 /// Popup que muestra el resultado del escaneo con información de la carta

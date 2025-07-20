@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import '../entities/scan_result.dart';
 
-/// Repositorio abstracto para operaciones de cámara
+/// Interfaz para el repositorio de la cámara
 /// Siguiendo el Dependency Inversion Principle (DIP)
 abstract class CameraRepository {
   /// Inicializa el sistema de cámara

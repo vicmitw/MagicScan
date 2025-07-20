@@ -77,6 +77,8 @@ class CameraController extends ValueNotifier<CameraState> {
     value = value.copyWith(isScanning: true, error: null);
 
     try {
+      // Nota: El test con imagen local ahora se ejecuta en CameraService.captureAndProcess()
+      
       final result = await _scanCardUseCase.execute(scanType);
       
       value = value.copyWith(

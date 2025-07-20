@@ -1,11 +1,18 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
-import '../models/scanned_card.dart';
-import '../models/scan_result.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../domain/entities/scanned_card.dart';
+import '../../domain/entities/scan_result.dart';
+import '../../domain/services/scanning/core/image_cropper_service.dart';
+import '../../domain/services/scanning/core/ocr_service.dart';
+import 'scanning/image_cropper_service_impl.dart';
+import 'scanning/ocr_service_impl.dart';
 
 /// Servicio para manejo de cámara y reconocimiento de cartas
 class CameraService {
@@ -20,6 +27,10 @@ class CameraService {
   bool _isScanning = false;
 
   final _textRecognizer = TextRecognizer();
+  
+  // Motor de scanning real
+  final ImageCropperService _imageCropper = ImageCropperServiceImpl();
+  final OCRService _ocrService = OCRServiceImpl();
 
   /// Inicializa el servicio de cámara
   Future<bool> initialize() async {
@@ -45,9 +56,14 @@ class CameraService {
       );
 
       await _controller!.initialize();
+      
+      // Configurar autofocus continuo para mejor nitidez en lectura de texto
+      await _controller!.setFocusMode(FocusMode.auto);
+      await _controller!.setExposureMode(ExposureMode.auto);
+      
       _isInitialized = true;
 
-      debugPrint('Servicio de cámara inicializado correctamente');
+      debugPrint('Servicio de cámara inicializado correctamente con autofocus');
       return true;
     } catch (e) {
       debugPrint('Error al inicializar cámara: $e');
@@ -85,31 +101,101 @@ class CameraService {
     }
 
     try {
+      // 🧪 TEST TEMPORAL: Test con imagen local de alta calidad ANTES de la captura real
+      await _runLocalImageTest();
+      
+      debugPrint('🚀 Iniciando captura real...');
+      
       // Capturar imagen
       final XFile image = await _controller!.takePicture();
-
-      // MOCK: Devolver datos mockeados de la carta "Obeka, Brute Chronologist"
-      await Future.delayed(const Duration(milliseconds: 800)); // Simular procesamiento
+      final imageFile = File(image.path);
       
+      debugPrint('📷 Imagen capturada: ${image.path}');
+
+      // Calcular bounds del overlay (240x336px centrado)
+      final screenSize = _controller!.value.previewSize!;
+      final overlayBounds = _calculateOverlayBounds(screenSize);
+      
+      debugPrint('📐 Screen size: ${screenSize.width}x${screenSize.height}');
+              debugPrint('📐 Overlay bounds: ${overlayBounds.width}x${overlayBounds.height} at (${overlayBounds.left}, ${overlayBounds.top}) - Proporción 5:7');
+
+      // Paso 1: Recortar imagen usando overlay bounds
+      final cropResult = await _imageCropper.cropToOverlay(
+        originalImage: imageFile,
+        bounds: overlayBounds,
+      );
+
+      if (!cropResult.success) {
+        debugPrint('❌ Error al recortar: ${cropResult.error}');
+        return ScanResult.error(
+          error: 'Error al recortar imagen: ${cropResult.error}',
+          scanType: scanType,
+        );
+      }
+
+      debugPrint('✂️ Imagen recortada exitosamente');
+
+      // Paso 2: Extraer nombre usando OCR
+      final ocrResult = await _ocrService.extractCardName(cropResult.croppedImageBytes);
+
+      if (!ocrResult.success) {
+        debugPrint('❌ Error en OCR: ${ocrResult.error}');
+        return ScanResult.error(
+          error: 'Error en OCR: ${ocrResult.error}',
+          scanType: scanType,
+        );
+      }
+
+      // 🎯 AQUÍ ESTÁ EL PRINT QUE QUERÍAS VER
+      debugPrint('');
+      debugPrint('🎯 ===== RESULTADO OCR =====');
+      debugPrint('📝 NOMBRE DETECTADO: "${ocrResult.extractedText}"');
+      debugPrint('🎯 CONFIDENCE: ${(ocrResult.confidence * 100).toStringAsFixed(1)}%');
+      debugPrint('📋 CANDIDATOS: ${ocrResult.candidateNames}');
+      debugPrint('🎯 ========================');
+      debugPrint('');
+
+      // Por ahora, retornar un mock simple para que no se rompa la UI
+      // En el futuro esto se conectará con la API de Scryfall
       final mockCard = ScannedCard(
-        name: 'Obeka, Brute Chronologist',
-        type: 'Legendary Creature — Ogre Wizard',
-        set: 'Commander Legends',
-        rarity: 'Mythic Rare',
+        name: ocrResult.extractedText, // Usar el nombre detectado
+        type: 'Detectado por OCR',
+        set: 'Real Scan',
+        rarity: 'common',
         imageUrl: 'assets/images/prueba_carta.png',
-        price: 8.99,
-        priceFormatted: '\$8.99',
-        confidence: 0.95,
+        price: 0.00,
+        priceFormatted: 'Procesando...',
+        confidence: ocrResult.confidence,
       );
 
       return ScanResult.success(card: mockCard, scanType: scanType);
     } catch (e) {
-      debugPrint('Error al capturar imagen: $e');
+      debugPrint('❌ Error general en captura: $e');
       return ScanResult.error(
         error: 'Error al capturar imagen: $e',
         scanType: scanType,
       );
     }
+  }
+
+  /// Calcula los bounds del overlay basándose en el tamaño de pantalla
+  OverlayBounds _calculateOverlayBounds(Size screenSize) {
+    // Dimensiones fijas del overlay (definidas en scan_camera_view.dart)
+    const overlayWidth = 240.0;
+    const overlayHeight = 336.0;
+    
+    // Calcular posición centrada
+    final left = (screenSize.width - overlayWidth) / 2;
+    final top = (screenSize.height - overlayHeight) / 2;
+    
+    return OverlayBounds(
+      left: left,
+      top: top,
+      width: overlayWidth,
+      height: overlayHeight,
+      screenWidth: screenSize.width,
+      screenHeight: screenSize.height,
+    );
   }
 
   /// Procesa una imagen para reconocer texto de cartas MTG
@@ -118,17 +204,17 @@ class CameraService {
       final inputImage = InputImage.fromFilePath(imagePath);
       final recognizedText = await _textRecognizer.processImage(inputImage);
 
-      // Procesar texto reconocido para extraer información de carta
+      // Extraer información de la carta (simplificado por ahora)
       final cardInfo = _extractCardInfo(recognizedText.text);
 
-      if (cardInfo != null) {
-        return ScanResult.success(card: cardInfo, scanType: scanType);
-      } else {
+      if (cardInfo == null) {
         return ScanResult.error(
-          error: 'No se pudo reconocer información de carta',
+          error: 'No se pudo reconocer la carta',
           scanType: scanType,
         );
       }
+
+      return ScanResult.success(card: cardInfo, scanType: scanType);
     } catch (e) {
       debugPrint('Error al procesar imagen: $e');
       return ScanResult.error(
@@ -138,7 +224,6 @@ class CameraService {
     }
   }
 
-  /// Extrae información de carta del texto reconocido
   ScannedCard? _extractCardInfo(String recognizedText) {
     if (recognizedText.isEmpty) return null;
 
@@ -201,16 +286,16 @@ class CameraService {
     try {
       final image = await _controller!.takePicture();
       final bytes = await File(image.path).readAsBytes();
-
-      // Optimizar imagen para reconocimiento
+      
+      // Procesar imagen para optimizar reconocimiento
       final decodedImage = img.decodeImage(bytes);
       if (decodedImage == null) return null;
 
-      // Redimensionar para optimizar procesamiento
-      final resized = img.copyResize(decodedImage, width: 800);
-
-      // Mejorar contraste para mejor reconocimiento
-      final enhanced = img.adjustColor(resized, contrast: 1.2, brightness: 0.1);
+      // Aplicar mejoras básicas
+      final enhanced = img.adjustColor(decodedImage, 
+        contrast: 1.2, 
+        brightness: 1.1
+      );
 
       return Uint8List.fromList(img.encodeJpg(enhanced));
     } catch (e) {
@@ -274,16 +359,50 @@ class CameraService {
     }
   }
 
-  /// Libera recursos
-  Future<void> dispose() async {
+  /// Test con imagen local de alta calidad  
+  Future<void> testWithLocalImage(String imagePath) async {
+    debugPrint('🧪 Iniciando test con imagen local desde CameraService...');
+    await _ocrService.testWithLocalImage(imagePath);
+  }
+
+  /// Test interno con asset de imagen local
+  Future<void> _runLocalImageTest() async {
     try {
-      _isScanning = false;
-      await _controller?.dispose();
-      await _textRecognizer.close();
-      _controller = null;
-      _isInitialized = false;
+      debugPrint('🧪 ===== EJECUTANDO TEST CON IMAGEN LOCAL =====');
+      
+      // Cargar asset y copiarlo a archivo temporal
+      final assetPath = 'assets/images/prueba_carta.png';
+      debugPrint('📁 Cargando asset: $assetPath');
+      
+      final byteData = await rootBundle.load(assetPath);
+      final bytes = byteData.buffer.asUint8List();
+      debugPrint('📦 Asset cargado: ${bytes.length} bytes');
+      
+      // Crear archivo temporal
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/test_card_${DateTime.now().millisecondsSinceEpoch}.png');
+      await tempFile.writeAsBytes(bytes);
+      debugPrint('💾 Asset copiado a: ${tempFile.path}');
+      
+      // Ejecutar test
+      await _ocrService.testWithLocalImage(tempFile.path);
+      
+      // Limpiar archivo temporal
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
+      
+      debugPrint('🧪 ===== FIN TEST - CONTINUANDO CON CAPTURA REAL =====');
+      
     } catch (e) {
-      debugPrint('Error al liberar recursos: $e');
+      debugPrint('❌ Error en test con asset: $e');
     }
+  }
+
+  /// Libera recursos del servicio
+  Future<void> dispose() async {
+    await _textRecognizer.close();
+    await _controller?.dispose();
+    _isInitialized = false;
   }
 }
