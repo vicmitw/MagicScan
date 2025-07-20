@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>MagicScan necesita acceso a tu cámara para poder escanear documentos y tarjetas de visita.</string>
 </dict>
 </plist>

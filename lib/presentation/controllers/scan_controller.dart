@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/models/scan_result.dart';
-import '../../data/models/scanned_card.dart';
+import 'package:magicscan/presentation/pages/scanner/widgets/manual_card_selection_popup.dart';
+import '../../domain/entities/scan_result.dart';
+import '../../domain/entities/scanned_card.dart';
 import '../../data/services/camera_service.dart';
 import '../widgets/scanner/scan_result_popup.dart';
 import '../widgets/scanner/scan_camera_view.dart';
@@ -47,10 +48,9 @@ class ScanState {
 class ScanController extends StateNotifier<ScanState> {
   final CameraService _cameraService;
 
-  ScanController(this._cameraService) : super(const ScanState());
+  bool _simulateLowConfidence = true; // Flag para alternar la simulación
 
   /// Inicia un escaneo según el tipo especificado
-  Future<void> startScan(ScanType scanType, BuildContext context) async {
     try {
       state = state.copyWith(
         isScanning: true,
@@ -117,18 +117,36 @@ class ScanController extends StateNotifier<ScanState> {
       lastResult: result,
     );
 
-    // Mostrar popup con la información de la carta
-    if (context.mounted) {
-      showScanResultPopup(
-        context: context,
-        card: card,
-        scanType: result.scanType,
-        onComplete: () {
-          _onScanComplete(result.scanType, context);
-        },
-        duration: const Duration(seconds: 4),
-      );
+    // Lógica de simulación para alternar entre popups
+    if (_simulateLowConfidence) {
+      // Escenario 1: Baja confianza -> mostramos el popup de selección manual
+      // Creamos una lista de imágenes de prueba para el popup
+      final mockImagePaths = [
+        'assets/cartas_prueba_popup/image copy 5.png',
+        'assets/cartas_prueba_popup/image copy 4.png',
+        'assets/cartas_prueba_popup/image copy 3.png',
+        'assets/cartas_prueba_popup/image copy 2.png',
+        'assets/cartas_prueba_popup/image copy.png',
+        'assets/cartas_prueba_popup/image.png',
+      ];
+      if (context.mounted) {
+        await showManualCardSelectionDialog(context, mockImagePaths);
+      }
+    } else {
+      // Escenario 2: Alta confianza -> mostramos el popup de éxito original
+      if (context.mounted) {
+        showScanResultPopup(
+          context: context,
+          card: card,
+          scanType: result.scanType,
+          onComplete: () => _onScanComplete(result.scanType, context),
+          duration: const Duration(seconds: 4),
+        );
+      }
     }
+
+    // Alternamos el flag para el próximo escaneo
+    _simulateLowConfidence = !_simulateLowConfidence;
   }
 
   /// Maneja la finalización de un escaneo
