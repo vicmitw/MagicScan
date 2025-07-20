@@ -12,16 +12,16 @@ Future<void> showManualCardSelectionDialog(
     BuildContext context, List<String> cardImagePaths) async {
   // Rastreador de estado para la carta seleccionada. Usamos un ValueNotifier
   // para poder reconstruir solo el contenido del diálogo con un `StatefulBuilder`.
-  final selected_card_notifier = ValueNotifier<String?>(null);
+  final selectedCardNotifier = ValueNotifier<String?>(null);
 
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext dialogContext) {
       return ValueListenableBuilder<String?>(
-        valueListenable: selected_card_notifier,
+        valueListenable: selectedCardNotifier,
         builder: (context, selectedCard, child) {
-          final is_confirmation_view = selectedCard != null;
+          final isConfirmationView = selectedCard != null;
 
           return AlertDialog(
             backgroundColor: AppColors.background,
@@ -30,7 +30,7 @@ Future<void> showManualCardSelectionDialog(
               side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
             ),
             title: Text(
-              is_confirmation_view
+              isConfirmationView
                   ? 'Confirmar Selección'
                   : 'Selección Manual',
               style: Theme.of(context).textTheme.headlineSmall,
@@ -38,15 +38,15 @@ Future<void> showManualCardSelectionDialog(
             ),
             content: SizedBox(
               width: double.maxFinite,
-              child: is_confirmation_view
+              child: isConfirmationView
                   ? _build_confirmation_view(
                       context,
-                      selectedCard!,
-                      () => selected_card_notifier.value = null,
+                      selectedCard,
+                      () => selectedCardNotifier.value = null,
                     )
                   : _build_grid_view(
                       cardImagePaths,
-                      (path) => selected_card_notifier.value = path,
+                      (path) => selectedCardNotifier.value = path,
                     ),
             ),
           );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../../theme/app_colors.dart';
 import '../../../domain/entities/scan_result.dart';
-import '../../../domain/entities/scanned_card.dart';
 import '../../../data/services/camera_service.dart';
 
 /// Widget que muestra la vista de cámara con marco de captura

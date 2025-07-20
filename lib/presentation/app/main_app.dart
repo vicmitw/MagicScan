@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../widgets/navigation/bottom_navigation.dart';
 import '../pages/home/home_page.dart';
-import '../pages/scanner/scanner_page.dart';
 import '../pages/packs/packs_page.dart';
 import '../pages/decks/decks_page.dart';
 import '../pages/stats/stats_page.dart';

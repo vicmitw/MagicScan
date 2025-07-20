@@ -341,8 +341,8 @@ class OCRServiceImpl implements OCRService {
       ];
       
       for (final region in textRegions) {
-        for (int x = region['x']! as int; x < (region['x']! as int) + (region['w']! as int); x += 3) {
-          for (int y = region['y']! as int; y < (region['y']! as int) + (region['h']! as int); y += 2) {
+        for (int x = region['x']!; x < (region['x']!) + (region['w']!); x += 3) {
+          for (int y = region['y']!; y < (region['y']!) + (region['h']!); y += 2) {
             if ((x + y) % 4 == 0) { // Patrón para simular texto
               testImage.setPixel(x, y, img.ColorRgb8(20, 20, 20)); // Negro
             }
@@ -410,6 +410,7 @@ class OCRServiceImpl implements OCRService {
   }
 
   /// Test con imagen local de alta calidad
+  @override
   Future<void> testWithLocalImage(String imagePath) async {
     try {
       debugPrint('🧪 ===== TEST CON IMAGEN LOCAL =====');

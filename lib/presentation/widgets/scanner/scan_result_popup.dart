@@ -3,7 +3,6 @@ import 'dart:ui';
 import '../../theme/app_colors.dart';
 import '../../../domain/entities/scanned_card.dart';
 import '../../../domain/entities/scan_result.dart';
-import '../cards/card_preview.dart';
 
 /// Popup que muestra el resultado del escaneo con información de la carta
 class ScanResultPopup extends StatefulWidget {
